@@ -4,7 +4,7 @@ CREATE TABLE clients (
     prenom VARCHAR(30) NOT NULL,
     adresse VARCHAR(120),
     cpo CHAR(5) NOT NULL 
-    CONSTRAINT check_cpo CHECK (cpo > 01000 AND cpo < 95999),
+    CONSTRAINT check_cpo CHECK(convert(numeric(5),cpo) BETWEEN 1000 AND 95999),
     ville VARCHAR(80) NOT NULL DEFAULT 'Nantes'
 );
 
@@ -36,21 +36,26 @@ CREATE TABLE fiches (
     noFic NUMERIC(6) NOT NULL PRIMARY KEY,
     nocli NUMERIC(6) NOT NULL FOREIGN KEY REFERENCES clients(noCli)
         ON DELETE CASCADE,
-    dateCrea DATE NOT NULL,
-    datePaye DATE CONSTRAINT check_datePaye CHECK (datePaye > dateCrea),
-    etat CHAR(2) NOT NULL CONSTRAINT check_etat 
-    CHECK (etat LIKE 'EC' OR etat LIKE 'RE' OR etat LIKE 'SO') 
-    DEFAULT 'EC'
+    dateCrea DATETIME NOT NULL DEFAULT GETDATE(),
+    datePaye DATETIME,
+    etat CHAR(2) NOT NULL DEFAULT 'EC'
+        CONSTRAINT check_etat CHECK (etat IN ('EC', 'RE', 'SO')) 
 );
+
+ALTER TABLE fiches
+ADD CONSTRAINT check_datePaye CHECK (datePaye > dateCrea);
 
 CREATE TABLE articles (
     refart CHAR(8) NOT NULL PRIMARY KEY,
     designation VARCHAR(80) NOT NULL,
      codeGam CHAR(5) NOT NULL,
     codeCate CHAR(5) NOT NULL
-    CONSTRAINT fk_articles_grilleTarifs FOREIGN KEY (codeGam, codeCate)
-								REFERENCES grilleTarifs(codeGam, codeCate)
+    
 );
+
+ALTER TABLE articles
+ADD CONSTRAINT fk_articles_grilleTarifs FOREIGN KEY (codeGam, codeCate)
+		REFERENCES grilleTarifs(codeGam, codeCate);
 
 CREATE TABLE lignesfic (
     noLig NUMERIC(3) NOT NULL,
@@ -58,6 +63,14 @@ CREATE TABLE lignesfic (
         ON DELETE CASCADE,
     refart CHAR(8) NOT NULL FOREIGN KEY REFERENCES articles(refart),
     depart DATE NOT NULL DEFAULT GETDATE(),
-    retour DATE  CONSTRAINT retour CHECK (retour > depart)
+    retour DATE  
     CONSTRAINT pk_lignesfic_fiches PRIMARY KEY(noLig, noFic)
 );
+
+ALTER TABLE lignesfic
+ADD CONSTRAINT check_retour CHECK (retour > depart);
+
+ALTER TABLE fiches
+ADD CONSTRAINT ck_fiches_datePaye_etat 
+CHECK((datePaye IS NULL AND etat <> 'SO')OR 
+    (datePaye IS NOT NULL AND etat = 'SO'));
