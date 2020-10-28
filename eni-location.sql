@@ -32,6 +32,7 @@ CREATE TABLE tarifs (
 );
 GO
 
+
 CREATE TABLE grilletarifs (
     codeGam CHAR(5) NOT NULL FOREIGN KEY REFERENCES gammes(codeGam),
     codeCate CHAR(5) NOT NULL FOREIGN KEY REFERENCES categories(codeCate),
